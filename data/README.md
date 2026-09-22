@@ -20,8 +20,8 @@ U.S. Department of Transportation.
 | Métrica | Valor |
 |---|---|
 | Filas de datos (sin cabecera) | 597 919 |
-| Columnas | 110 |
-| Tamaño CSV descomprimido | ~270 MB |
+| Columnas | 110 (109 útiles + 1 vacía por la coma final) |
+| Tamaño CSV descomprimido | 257,9 MiB |
 | Tamaño ZIP original | ~30 MB |
 | Periodos distintos en el archivo | 1 (`2026-4`) |
 | Estados distintos en origen | 52 |
@@ -33,23 +33,67 @@ U.S. Department of Transportation.
 
 ```
 data/
-├── raw/          # CSV completo del BTS. NO versionado (.gitignore): supera el limite
-│                 # de 100 MB por archivo de GitHub. Se descarga desde la fuente.
-├── samples/      # Subconjuntos reducidos, si versionados en el repositorio
-│   ├── idaho_2026_04.csv               # 5 225 filas: origen O destino = ID
-│   └── muestra_nacional_2026_04_10k.csv # 10 000 primeras filas, cobertura nacional
+├── on_time_2026_04.parquet  # DATASET COMPLETO: 597 919 filas x 109 columnas,
+│                            # Parquet + zstd nivel 9, ~15,8 MiB. Versionado.
+├── raw/                     # CSV original del BTS (~258 MiB). NO versionado:
+│                            # supera el limite de 100 MB por archivo de GitHub.
+├── samples/
+│   └── idaho_2026_04.csv    # 5 225 filas (origen O destino = ID), en CSV plano
+│                            # para abrir directamente en Excel o Power BI.
 └── reference/
-    └── bts_readme_field_layout.html    # Readme oficial del BTS con el layout de campos
+    └── bts_readme_field_layout.html  # Readme oficial del BTS con el layout de campos
+```
+
+## Formato Parquet
+
+El dataset completo se versiona como **Parquet con compresión zstd (nivel 9)**:
+
+| | CSV original | Parquet + zstd |
+|---|---|---|
+| Tamaño | 257,9 MiB | **15,8 MiB** |
+| Filas | 597 919 | 597 919 |
+| Columnas | 110 | 109 |
+| Cabe en GitHub sin LFS | No | Sí |
+
+La reducción es de **16,4x (93,9 % menos)**. No se pierde ninguna fila. La única columna
+que se descarta es una columna anónima y vacía que el BTS genera porque cada línea del
+CSV termina con una coma final.
+
+Más allá del tamaño, el formato columnar es el adecuado para cargas analíticas: una
+consulta que proyecta 5 de las 109 columnas solo lee esas 5 del disco (ver §1.5 del
+`README.md` principal).
+
+**Lectura:**
+
+```python
+import pandas as pd
+
+df = pd.read_parquet("data/on_time_2026_04.parquet")
+
+# O solo las columnas necesarias, que es la ventaja del formato columnar:
+df = pd.read_parquet(
+    "data/on_time_2026_04.parquet",
+    columns=["FlightDate", "Reporting_Airline", "Origin", "Dest", "ArrDelayMinutes"],
+)
+```
+
+**Regeneración desde el CSV:**
+
+```bash
+py -3 etl/csv_to_parquet.py "data/raw/On_Time_...2026_4.csv" data/on_time_2026_04.parquet
 ```
 
 ## Cómo reconstruir `data/raw/`
+
+No es necesario para trabajar: el dataset completo ya está en Parquet. Solo hace falta si
+se quiere el CSV original.
 
 1. Descargar el ZIP mensual desde el enlace de la fuente, seleccionando los campos
    descritos en el diccionario de datos del `README.md` principal.
 2. Descomprimir el CSV dentro de `data/raw/`.
 3. El archivo queda excluido del control de versiones por `.gitignore`.
 
-## Cómo se generaron las muestras
+## Cómo se generó la muestra de Idaho
 
 Recorrido en una sola pasada sobre el CSV completo, parseando el formato CSV con campos
 entrecomillados (necesario porque `OriginCityName` y `DestCityName` contienen comas
@@ -57,14 +101,12 @@ internas, p. ej. `"Boise, ID"`):
 
 ```bash
 unzip -p Archivio.zip "On_Time_...2026_4.csv" \
-  | awk -v ida="data/samples/idaho_2026_04.csv" \
-        -v smp="data/samples/muestra_nacional_2026_04_10k.csv" '
+  | awk -v ida="data/samples/idaho_2026_04.csv" '
       BEGIN { FPAT = "([^,]*)|(\"[^\"]*\")" }
-      NR == 1 { print > ida; print > smp; next }
+      NR == 1 { print > ida; next }
       {
         o = $17; d = $26; gsub(/"/, "", o); gsub(/"/, "", d)
         if (o == "ID" || d == "ID") print > ida
-        if (NR <= 10001)            print > smp
       }'
 ```
 

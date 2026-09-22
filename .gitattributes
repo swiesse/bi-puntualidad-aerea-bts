@@ -4,3 +4,9 @@
 # Los datos se conservan byte a byte, sin conversion de fin de linea
 *.csv  -text
 *.html -text
+
+# Binarios: nunca aplicar conversion de fin de linea ni diff textual
+*.parquet binary
+*.zip     binary
+*.pbix    binary
+*.xlsx    binary
