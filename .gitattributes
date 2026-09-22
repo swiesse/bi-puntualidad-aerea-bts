@@ -1,0 +1,6 @@
+# Normalizacion de fin de linea
+* text=auto eol=lf
+
+# Los datos se conservan byte a byte, sin conversion de fin de linea
+*.csv  -text
+*.html -text

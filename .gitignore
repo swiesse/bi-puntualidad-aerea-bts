@@ -1,0 +1,40 @@
+# ---------------------------------------------------------------
+# Datos crudos: NO se versionan.
+# El CSV mensual del BTS pesa ~270 MB y excede el limite duro de
+# 100 MB por archivo de GitHub. Se descarga desde la fuente.
+# ---------------------------------------------------------------
+data/raw/*
+!data/raw/.gitkeep
+*.zip
+*.csv.gz
+*.parquet
+
+# Excepcion: las muestras reducidas si se versionan
+!data/samples/*.csv
+
+# Artefactos de sistema
+__MACOSX/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Entornos y dependencias
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+node_modules/
+
+# Credenciales y configuracion local
+.env
+.env.local
+*.pem
+*.key
+config.local.*
+
+# Salidas de herramientas BI
+*.pbix.bak
+~$*.xlsx
+~$*.pptx
