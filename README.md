@@ -18,10 +18,6 @@
 
 ## 1.1 Business Intelligence como disciplina de ingeniería de la información
 
-Business Intelligence (BI) se define, siguiendo a Howard Dresner y la formalización posterior de Turban, Sharda y Delen, como el conjunto de **arquitecturas, metodologías, procesos y tecnologías que transforman datos crudos en información accionable para la toma de decisiones**. Desde la perspectiva de la ingeniería de la información, BI no es un producto ni una herramienta de visualización: es una **capa arquitectónica intermedia** que resuelve un problema estructural de los sistemas de información empresarial, a saber, la incompatibilidad radical entre las cargas de trabajo transaccionales (OLTP) y las cargas de trabajo analíticas (OLAP).
-
-Esta incompatibilidad se manifiesta en cinco ejes:
-
 | Dimensión de diseño | Sistema OLTP (operacional) | Sistema OLAP (analítico) |
 |---|---|---|
 | **Unidad de trabajo** | Transacción atómica sobre pocas filas | Consulta de agregación sobre millones de filas |
@@ -29,18 +25,6 @@ Esta incompatibilidad se manifiesta en cinco ejes:
 | **Patrón de acceso** | Alta selectividad, índices B-Tree, *point lookups* | Baja selectividad, *full scan*, índices *bitmap* o almacenamiento columnar |
 | **Temporalidad** | Estado actual; el dato se sobrescribe | Serie histórica; el dato se acumula y se versiona |
 | **Optimización** | Minimizar redundancia y anomalías de actualización | Minimizar *joins* y latencia de lectura; la redundancia es aceptable |
-
-El corolario de ingeniería es fundamental: **la normalización, óptima para la integridad transaccional, es contraproducente para la analítica**. Un modelo en 3FN del dominio aeronáutico requeriría del orden de 15 a 25 *joins* para responder una pregunta como «minutos promedio de demora en llegada por aerolínea, estado de origen y trimestre». El modelo dimensional reduce esa misma consulta a un *join* de un solo nivel entre la tabla de hechos y tres dimensiones.
-
-## 1.2 Modelamiento dimensional: los fundamentos de Kimball
-
-El modelamiento dimensional (Kimball & Ross, *The Data Warehouse Toolkit*) parte de una observación semántica: **todo proceso de negocio puede descomponerse en mediciones numéricas (hechos) calificadas por contextos descriptivos (dimensiones)**. Formalmente, un esquema dimensional es una función:
-
-```
-H : D₁ × D₂ × ... × Dₙ  →  M₁ × M₂ × ... × Mₖ
-```
-
-donde cada `Dᵢ` es el dominio de una dimensión, el producto cartesiano de las claves dimensionales define el **grano** (la unidad atómica de medición), y cada `Mⱼ` es una métrica cuantitativa asociada a esa unidad.
 
 ### 1.2.1 Los cuatro pasos canónicos de diseño
 
